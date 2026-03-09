@@ -470,6 +470,13 @@ fn is_callout_text(text: &str) -> bool {
   text.starts_with("[!") && text.ends_with("]") && text[2..text.len() - 1].chars().all(|c| c.is_ascii_uppercase())
 }
 
+fn needs_space_between(last: char, curr: char) -> bool {
+  fn is_cjk(c: char) -> bool {
+    matches!(c, '\u{4e00}'..='\u{9fff}' | '\u{3400}'..='\u{4dbf}' | '\u{f900}'..='\u{faff}')
+  }
+  (is_cjk(last) && curr.is_ascii_alphanumeric()) || (is_cjk(curr) && last.is_ascii_alphanumeric())
+}
+
 fn gen_str(text: &str, context: &mut Context) -> PrintItems {
   let mut text_builder = TextBuilder::new(context);
 
@@ -487,7 +494,7 @@ fn gen_str(text: &str, context: &mut Context) -> PrintItems {
   }
 
   impl<'a> TextBuilder<'a> {
-    pub fn new(context: &'a Context) -> TextBuilder<'a> {
+    pub fn new(context: &'a Context<'a>) -> TextBuilder<'a> {
       TextBuilder {
         items: PrintItems::new(),
         was_last_newline: false,
@@ -518,18 +525,12 @@ fn gen_str(text: &str, context: &mut Context) -> PrintItems {
             current_word.push(' ');
           }
         }
+
         current_word.push(character);
       } else {
         let mut text = String::new();
         text.push(character);
         self.current_word = Some(text);
-      }
-
-      fn needs_space_between(last: char, curr: char) -> bool {
-        fn is_cjk(c: char) -> bool {
-          matches!(c, '\u{4e00}'..='\u{9fff}' | '\u{3400}'..='\u{4dbf}' | '\u{f900}'..='\u{faff}')
-        }
-        (is_cjk(last) && curr.is_ascii_alphanumeric()) || (is_cjk(curr) && last.is_ascii_alphanumeric())
       }
     }
 

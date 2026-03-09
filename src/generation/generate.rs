@@ -518,14 +518,13 @@ fn gen_str(text: &str, context: &mut Context) -> PrintItems {
         return;
       }
 
-      if let Some(current_word) = self.current_word.as_mut() {
-        if let Some(last_char) = current_word.chars().last() {
-          // Insert space between CJK and ascii alphanumeric characters
-          if needs_space_between(last_char, character) {
-            current_word.push(' ');
-          }
+      if let Some(last_char) = self.current_word.as_ref().and_then(|w| w.chars().last()) {
+        if needs_space_between(last_char, character) {
+          self.space_or_newline();
         }
+      }
 
+      if let Some(current_word) = self.current_word.as_mut() {
         current_word.push(character);
       } else {
         let mut text = String::new();

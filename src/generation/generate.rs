@@ -512,11 +512,24 @@ fn gen_str(text: &str, context: &mut Context) -> PrintItems {
       }
 
       if let Some(current_word) = self.current_word.as_mut() {
+        if let Some(last_char) = current_word.chars().last() {
+          // Insert space between CJK and ascii alphanumeric characters
+          if needs_space_between(last_char, character) {
+            current_word.push(' ');
+          }
+        }
         current_word.push(character);
       } else {
         let mut text = String::new();
         text.push(character);
         self.current_word = Some(text);
+      }
+
+      fn needs_space_between(last: char, curr: char) -> bool {
+        fn is_cjk(c: char) -> bool {
+          matches!(c, '\u{4e00}'..='\u{9fff}' | '\u{3400}'..='\u{4dbf}' | '\u{f900}'..='\u{faff}')
+        }
+        (is_cjk(last) && curr.is_ascii_alphanumeric()) || (is_cjk(curr) && last.is_ascii_alphanumeric())
       }
     }
 

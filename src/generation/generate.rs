@@ -470,6 +470,13 @@ fn is_callout_text(text: &str) -> bool {
   text.starts_with("[!") && text.ends_with("]") && text[2..text.len() - 1].chars().all(|c| c.is_ascii_uppercase())
 }
 
+fn needs_space_between(last: char, curr: char) -> bool {
+  fn is_cjk(c: char) -> bool {
+    matches!(c, '\u{4e00}'..='\u{9fff}' | '\u{3400}'..='\u{4dbf}' | '\u{f900}'..='\u{faff}')
+  }
+  (is_cjk(last) && curr.is_ascii_alphanumeric()) || (is_cjk(curr) && last.is_ascii_alphanumeric())
+}
+
 fn gen_str(text: &str, context: &mut Context) -> PrintItems {
   let mut text_builder = TextBuilder::new(context);
 
@@ -487,7 +494,7 @@ fn gen_str(text: &str, context: &mut Context) -> PrintItems {
   }
 
   impl<'a> TextBuilder<'a> {
-    pub fn new(context: &'a Context) -> TextBuilder<'a> {
+    pub fn new(context: &'a Context<'a>) -> TextBuilder<'a> {
       TextBuilder {
         items: PrintItems::new(),
         was_last_newline: false,
@@ -509,6 +516,12 @@ fn gen_str(text: &str, context: &mut Context) -> PrintItems {
           self.space_or_newline();
         }
         return;
+      }
+
+      if let Some(last_char) = self.current_word.as_ref().and_then(|w| w.chars().last()) {
+        if needs_space_between(last_char, character) {
+          self.space_or_newline();
+        }
       }
 
       if let Some(current_word) = self.current_word.as_mut() {
